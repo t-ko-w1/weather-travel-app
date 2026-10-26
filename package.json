@@ -1,0 +1,16 @@
+{
+  "name": "weather-travel-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple outing records API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}
