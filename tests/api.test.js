@@ -32,6 +32,7 @@ test('GET /api/trips returns an ordered list', async () => {
     assert.deepEqual(await response.json(), [sample]);
   });
   assert.match(statement.sql, /ORDER BY outing_date DESC, id DESC/);
+  assert.match(statement.sql, /outing_date::text AS "outingDate"/);
   assert.deepEqual(statement.params, undefined);
 });
 
