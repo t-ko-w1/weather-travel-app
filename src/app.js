@@ -1,10 +1,11 @@
 const express = require('express');
+const path = require('node:path');
 
 const FIELDS = ['outingDate', 'city', 'destination', 'activity', 'notes', 'weather'];
 const MAX_LENGTHS = { city: 100, destination: 200, activity: 5000, notes: 5000, weather: 50 };
 const SELECT_COLUMNS = `
   id,
-  outing_date AS "outingDate",
+  outing_date::text AS "outingDate",
   city,
   destination,
   activity,
@@ -72,6 +73,8 @@ function createApp({ query }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '32kb' }));
+  // Serve the browser UI from the same origin so it can call /api without CORS setup.
+  app.use(express.static(path.join(__dirname, '..', 'public')));
 
   app.get('/api/trips', async (_req, res, next) => {
     try {

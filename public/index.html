@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5ef">
+  <title>お天気・お出かけ記録</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="お天気・お出かけ記録 ホーム">
+      <span class="brand-mark" aria-hidden="true">日</span>
+      <span>お天気・お出かけ記録</span>
+    </a>
+    <span class="header-note"><span class="status-dot"></span>あなたの旅のノート</span>
+  </header>
+
+  <main class="page-shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <p class="eyebrow">YOUR LITTLE TRAVEL JOURNAL</p>
+        <h1 id="page-title">お出かけの思い出を、<br><span>天気といっしょに。</span></h1>
+        <p class="intro-text">行った場所やその日の空模様を記録して、あとからゆっくり振り返りましょう。</p>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="sun"></div><div class="hill hill-back"></div><div class="hill hill-front"></div>
+        <span class="hero-spark spark-one">✦</span><span class="hero-spark spark-two">✳</span>
+        <span class="hero-caption">little moments,<br>big memories</span>
+      </div>
+    </section>
+
+    <div id="app-status" class="app-status" role="status" aria-live="polite" hidden></div>
+
+    <div class="content-grid">
+      <section class="panel form-panel" aria-labelledby="form-title">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">NEW MEMORY</p>
+            <h2 id="form-title">お出かけを記録する</h2>
+          </div>
+          <span class="heading-icon" aria-hidden="true">＋</span>
+        </div>
+        <p class="required-note"><span>*</span> は必須項目です</p>
+
+        <form id="trip-form" novalidate>
+          <div class="field-group">
+            <label for="outing-date">お出かけした日 <span class="required-mark">*</span></label>
+            <input id="outing-date" name="outingDate" type="date" required>
+            <small class="field-error" data-error-for="outingDate"></small>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label for="city">都市・エリア <span class="required-mark">*</span></label>
+              <input id="city" name="city" type="text" maxlength="100" placeholder="例：京都市" required>
+              <small class="field-error" data-error-for="city"></small>
+            </div>
+            <div class="field-group">
+              <label for="destination">目的地 <span class="required-mark">*</span></label>
+              <input id="destination" name="destination" type="text" maxlength="200" placeholder="例：嵐山" required>
+              <small class="field-error" data-error-for="destination"></small>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="activity">何をしましたか？</label>
+            <textarea id="activity" name="activity" rows="3" maxlength="5000" placeholder="散策、カフェめぐり、写真撮影など"></textarea>
+            <div class="field-meta"><small class="field-error" data-error-for="activity"></small><small class="counter" data-count-for="activity">0 / 5000</small></div>
+          </div>
+
+          <div class="field-group">
+            <label for="weather">その日の天気</label>
+            <input id="weather" name="weather" type="text" maxlength="50" placeholder="例：晴れ、ときどき曇り">
+            <small class="field-error" data-error-for="weather"></small>
+            <small class="hint">天気は手入力です。あとから編集できます。</small>
+          </div>
+
+          <div class="field-group">
+            <label for="notes">メモ</label>
+            <textarea id="notes" name="notes" rows="3" maxlength="5000" placeholder="感じたことや、次に行きたい場所など"></textarea>
+            <div class="field-meta"><small class="field-error" data-error-for="notes"></small><small class="counter" data-count-for="notes">0 / 5000</small></div>
+          </div>
+
+          <div class="form-actions">
+            <button id="cancel-edit" class="button button-quiet" type="button" hidden>編集をやめる</button>
+            <button id="submit-button" class="button button-primary" type="submit">
+              <span class="button-icon" aria-hidden="true">↗</span><span>記録を保存する</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel records-panel" aria-labelledby="records-title">
+        <div class="panel-heading records-heading">
+          <div>
+            <p class="eyebrow">YOUR JOURNAL</p>
+            <h2 id="records-title">お出かけの記録</h2>
+          </div>
+          <span id="record-count" class="record-count">— 件</span>
+        </div>
+
+        <div id="records-loading" class="loading-state">
+          <span class="spinner" aria-hidden="true"></span><span>記録を読み込んでいます…</span>
+        </div>
+        <div id="records-empty" class="empty-state" hidden>
+          <span class="empty-illustration" aria-hidden="true">☀</span>
+          <h3>これから思い出を記録しましょう</h3>
+          <p>最初のお出かけを左のフォームから追加できます。</p>
+        </div>
+        <div id="records-list" class="records-list" aria-live="polite"></div>
+      </section>
+    </div>
+    <footer class="page-footer">一つひとつの景色を、忘れないように。</footer>
+  </main>
+</body>
+</html>
