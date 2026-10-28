@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
+  <script src="/weather-icons.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -77,8 +78,42 @@
             <label for="weather">その日の天気</label>
             <input id="weather" name="weather" type="text" maxlength="50" placeholder="例：晴れ、ときどき曇り">
             <small class="field-error" data-error-for="weather"></small>
-            <small class="hint">天気は手入力です。あとから編集できます。</small>
+            <small class="hint">手入力、または選択した日付に対応する天気を取得して反映できます。</small>
           </div>
+
+          <section class="weather-tool" aria-labelledby="weather-tool-title">
+            <div class="weather-tool-heading">
+              <div>
+                <p class="eyebrow">LIVE WEATHER</p>
+                <h3 id="weather-tool-title">選択した日の天気</h3>
+              </div>
+              <span class="weather-tool-icon" aria-hidden="true">☼</span>
+            </div>
+            <p class="weather-tool-copy">都市と日付に合わせた天気を取得します。日付を変更すると再取得します。</p>
+            <button id="weather-lookup-button" class="button button-weather" type="button">選択日の天気を取得</button>
+            <p id="weather-feedback" class="weather-feedback" role="status" aria-live="polite" hidden></p>
+            <div id="weather-result" class="weather-result" aria-live="polite" hidden>
+              <div class="weather-result-main">
+                <span id="weather-result-icon" class="weather-result-icon" aria-hidden="true">🌡️</span>
+                <div>
+                  <p id="weather-location" class="weather-location"></p>
+                  <p id="weather-kind" class="weather-kind"></p>
+                  <p id="weather-condition" class="weather-condition"></p>
+                </div>
+                <p id="weather-temperature" class="weather-temperature"></p>
+              </div>
+              <div class="weather-details">
+                <span id="weather-high-low"></span>
+                <span id="weather-precipitation"></span>
+                <span id="weather-feels-like"></span>
+                <span id="weather-humidity"></span>
+                <span id="weather-wind"></span>
+              </div>
+              <p id="weather-observed" class="weather-time"></p>
+              <p id="weather-retrieved" class="weather-time"></p>
+              <span class="weather-attribution">天気データ：</span><a class="weather-attribution" href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a><span class="weather-attribution"> · </span><a class="weather-attribution" href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a>
+            </div>
+          </section>
 
           <div class="field-group">
             <label for="notes">メモ</label>

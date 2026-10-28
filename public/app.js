@@ -8,8 +8,13 @@ const submitButton = document.querySelector('#submit-button');
 const submitLabel = submitButton.querySelector('span:last-child');
 const cancelEditButton = document.querySelector('#cancel-edit');
 const formTitle = document.querySelector('#form-title');
+const weatherLookupButton = document.querySelector('#weather-lookup-button');
+const weatherFeedback = document.querySelector('#weather-feedback');
+const weatherResult = document.querySelector('#weather-result');
+const weatherDateInput = document.querySelector('#outing-date');
 let editingId = null;
 let busy = false;
+let weatherRequestId = 0;
 
 const fieldNames = {
   outingDate: 'お出かけした日', city: '都市・エリア', destination: '目的地',
@@ -154,11 +159,13 @@ function renderRecords(records) {
     const card = makeElement('article', 'trip-card');
     const topline = makeElement('div', 'trip-topline');
     topline.append(makeElement('time', 'trip-date', formatDate(trip.outingDate)));
-    if (trip.weather) {
-      const weather = makeElement('span', 'trip-weather');
-      weather.append(makeElement('span', 'weather-sun', '☼'), document.createTextNode(trip.weather));
-      topline.append(weather);
-    }
+    const weather = makeElement('span', 'trip-weather');
+    weather.append(
+      makeElement('span', 'weather-icon', window.WeatherIcons.iconForWeather(trip.weather)),
+      document.createTextNode(trip.weather || '未入力'),
+    );
+    weather.setAttribute('aria-label', trip.weather || '天気未入力');
+    topline.append(weather);
     const title = makeElement('h3', '', trip.destination);
     const place = makeElement('p', 'trip-place', trip.city);
     card.append(topline, title, place);
@@ -230,6 +237,85 @@ async function deleteTrip(trip) {
     showStatus(error.message, 'error');
   }
 }
+
+function formatRetrievedAt(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return value;
+  return new Intl.DateTimeFormat('ja-JP', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+}
+
+async function lookupWeather() {
+  const city = form.elements.namedItem('city').value.trim();
+  const date = weatherDateInput.value;
+  if (city.length < 2) {
+    weatherResult.hidden = true;
+    weatherFeedback.textContent = '都市・エリアを2文字以上入力してください。';
+    weatherFeedback.dataset.kind = 'error';
+    weatherFeedback.hidden = false;
+    form.elements.namedItem('city').focus();
+    return;
+  }
+  if (dateOnly(date) !== date) {
+    weatherResult.hidden = true;
+    weatherFeedback.textContent = '天気を取得する日付を選択してください。';
+    weatherFeedback.dataset.kind = 'error';
+    weatherFeedback.hidden = false;
+    weatherDateInput.focus();
+    return;
+  }
+
+  const requestId = ++weatherRequestId;
+  weatherLookupButton.disabled = true;
+  weatherLookupButton.textContent = '天気を取得しています…';
+  weatherFeedback.textContent = '都市と選択日を確認しています…';
+  weatherFeedback.dataset.kind = 'loading';
+  weatherFeedback.hidden = false;
+  weatherResult.hidden = true;
+
+  try {
+    const data = await request(`/api/weather?city=${encodeURIComponent(city)}&date=${encodeURIComponent(date)}`);
+    if (requestId !== weatherRequestId) return;
+    document.querySelector('#weather-location').textContent = [data.location.name, data.location.region, data.location.country].filter(Boolean).join('・');
+    document.querySelector('#weather-condition').textContent = data.weather;
+    document.querySelector('#weather-result-icon').textContent = window.WeatherIcons.iconForWeather(data.weather);
+    const kindLabels = { historical: '過去の天気（履歴データ）', current: '現在の天気', forecast: '天気予報' };
+    document.querySelector('#weather-kind').textContent = kindLabels[data.dataType] || '天気情報';
+    const currentTemperature = data.temperature?.value;
+    document.querySelector('#weather-temperature').textContent = currentTemperature == null ? '' : `${currentTemperature}${data.temperature.unit}`;
+    document.querySelector('#weather-high-low').textContent = data.temperatureMax && data.temperatureMin
+      ? `最高 ${data.temperatureMax.value}${data.temperatureMax.unit} / 最低 ${data.temperatureMin.value}${data.temperatureMin.unit}` : '';
+    document.querySelector('#weather-precipitation').textContent = data.precipitation
+      ? `降水量 ${data.precipitation.value}${data.precipitation.unit}` : '';
+    document.querySelector('#weather-feels-like').textContent = data.apparentTemperature?.value == null ? '' : `体感 ${data.apparentTemperature.value}${data.apparentTemperature.unit}`;
+    document.querySelector('#weather-humidity').textContent = data.humidity?.value == null ? '' : `湿度 ${data.humidity.value}${data.humidity.unit}`;
+    document.querySelector('#weather-wind').textContent = data.windSpeed?.value == null ? '' : `風速 ${data.windSpeed.value} ${data.windSpeed.unit}`;
+    document.querySelector('#weather-observed').textContent = data.dataType === 'current'
+      ? `観測時刻：${data.observedAt.replace('T', ' ')}（${data.timezone || '現地時刻'}）`
+      : `対象日：${data.targetDate}（${data.timezone || '現地時刻'}）`;
+    document.querySelector('#weather-retrieved').textContent = `取得日時：${formatRetrievedAt(data.retrievedAt)}`;
+    form.elements.namedItem('weather').value = data.weather.slice(0, 50);
+    const weatherError = form.querySelector('[data-error-for="weather"]');
+    if (weatherError) weatherError.textContent = '';
+    form.elements.namedItem('weather').removeAttribute('aria-invalid');
+    weatherResult.hidden = false;
+    weatherFeedback.textContent = `${kindLabels[data.dataType] || '天気情報'}を取得しました。記録に保存する場合はフォームを保存してください。`;
+    weatherFeedback.dataset.kind = 'success';
+  } catch (error) {
+    if (requestId !== weatherRequestId) return;
+    weatherFeedback.textContent = error.message;
+    weatherFeedback.dataset.kind = 'error';
+  } finally {
+    if (requestId === weatherRequestId) {
+      weatherLookupButton.disabled = false;
+      weatherLookupButton.textContent = '選択日の天気を取得';
+    }
+  }
+}
+
+weatherLookupButton.addEventListener('click', lookupWeather);
+weatherDateInput.addEventListener('change', () => {
+  if (form.elements.namedItem('city').value.trim().length >= 2) return lookupWeather();
+});
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();

@@ -68,6 +68,29 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: #d47f6
 .field-error { display: block; min-height: 0; margin-top: 4px; color: #ae5944; font-size: 10px; line-height: 1.5; }
 .field-error:empty { display: none; }
 .hint { display: block; margin-top: 5px; color: #9aa39a; font-size: 10px; }
+.weather-tool { margin: 3px 0 17px; padding: 14px; border: 1px solid #e6ebdf; border-radius: 10px; background: linear-gradient(135deg, #f7f8f0, #f3f7f0); }
+.weather-tool-heading { display: flex; align-items: center; justify-content: space-between; }
+.weather-tool-heading .eyebrow { margin-bottom: 4px; }
+.weather-tool-heading h3 { margin: 0; color: #46584b; font-family: "Noto Sans JP", sans-serif; font-size: 12px; font-weight: 600; }
+.weather-tool-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #f8ecd7; color: #c99547; font-size: 17px; }
+.weather-tool-copy { margin: 7px 0 10px; color: #8a968a; font-size: 10px; line-height: 1.65; }
+.button-weather { min-height: 34px; padding: 0 12px; border: 1px solid #d8e1d5; background: #fffefa; color: #4f7158; font-size: 10px; }
+.button-weather:hover:not(:disabled) { background: #eef4eb; }
+.weather-feedback { margin: 8px 0 0; color: #647c67; font-size: 10px; line-height: 1.6; }
+.weather-feedback[data-kind="error"] { color: #a65440; }
+.weather-feedback[data-kind="loading"] { color: #697b6c; }
+.weather-result { margin-top: 12px; padding: 13px; border: 1px solid #e6eadf; border-radius: 9px; background: rgba(255,255,255,.8); }
+.weather-result-main { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.weather-result-icon { flex: 0 0 auto; font-size: 24px; line-height: 1; }
+.weather-location { margin: 0 0 3px; color: #8b9689; font-size: 9px; }
+.weather-kind { margin: 0 0 3px; color: #879584; font-size: 9px; }
+.weather-condition { margin: 0; color: #3e5847; font-family: "Noto Sans JP", sans-serif; font-size: 14px; font-weight: 600; }
+.weather-temperature { margin: 0; color: #3d6249; font-size: 27px; font-weight: 500; letter-spacing: -.05em; white-space: nowrap; }
+.weather-details { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.weather-details span { padding: 5px 7px; border-radius: 5px; background: #f2f4ef; color: #718074; font-size: 9px; }
+.weather-time { margin: 9px 0 0; color: #929b91; font-size: 9px; line-height: 1.55; }
+.weather-time + .weather-time { margin-top: 3px; }
+.weather-attribution { display: inline-block; margin-top: 7px; color: #748b78; font-size: 9px; text-underline-offset: 2px; }
 .field-meta { display: flex; justify-content: space-between; gap: 10px; }
 .field-meta .field-error { flex: 1; }
 .counter { padding-top: 4px; color: #a0a79f; font-size: 9px; white-space: nowrap; }
@@ -94,7 +117,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: #d47f6
 .trip-topline { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .trip-date { color: #89968a; font-family: "DM Sans", sans-serif; font-size: 10px; font-weight: 600; letter-spacing: .07em; }
 .trip-weather { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px; border-radius: 16px; background: #f5f2e9; color: #9a8057; font-size: 10px; }
-.weather-sun { color: #d9a352; font-size: 12px; }
+.weather-icon { font-size: 13px; line-height: 1; }
 .trip-card h3 { margin: 0 0 7px; color: #35483b; font-family: "Noto Sans JP", sans-serif; font-size: 14px; font-weight: 600; line-height: 1.55; }
 .trip-place { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; color: #879188; font-size: 10px; }
 .trip-place::before { content: "⌖"; color: #91a394; font-size: 14px; }

@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('node:path');
+const { getWeather } = require('./weather');
 
 const FIELDS = ['outingDate', 'city', 'destination', 'activity', 'notes', 'weather'];
 const MAX_LENGTHS = { city: 100, destination: 200, activity: 5000, notes: 5000, weather: 50 };
@@ -68,13 +69,23 @@ function validId(value) {
   return /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value) > 0;
 }
 
-function createApp({ query }) {
+function createApp({ query, weather = getWeather }) {
   if (typeof query !== 'function') throw new TypeError('query関数が必要です。');
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '32kb' }));
   // Serve the browser UI from the same origin so it can call /api without CORS setup.
   app.use(express.static(path.join(__dirname, '..', 'public')));
+
+  app.get('/api/weather', async (req, res, next) => {
+    try {
+      if (!validDate(req.query.date)) {
+        return res.status(400).json({ error: { code: 'INVALID_DATE', message: '日付は有効なYYYY-MM-DD形式で指定してください。' } });
+      }
+      const result = await weather(req.query.city, req.query.date);
+      res.json(result);
+    } catch (error) { next(error); }
+  });
 
   app.get('/api/trips', async (_req, res, next) => {
     try {
@@ -137,6 +148,9 @@ function createApp({ query }) {
     }
     if (error.type === 'entity.too.large') {
       return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'リクエストが大きすぎます。' } });
+    }
+    if (error.status && error.code) {
+      return res.status(error.status).json({ error: { code: error.code, message: error.message } });
     }
     // Detailed errors are logged server-side only; never return database internals.
     console.error('API request failed:', error.message);
