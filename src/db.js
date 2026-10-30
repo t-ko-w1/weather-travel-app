@@ -15,4 +15,22 @@ function createPool() {
   return new Pool({ ...config, max: 10, idleTimeoutMillis: 30000 });
 }
 
-module.exports = { createPool };
+async function withTransaction(pool, work) {
+  if (!pool || typeof pool.connect !== 'function' || typeof work !== 'function') {
+    throw new TypeError('PostgreSQL poolとトランザクション処理が必要です。');
+  }
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await work((text, params) => client.query(text, params));
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    try { await client.query('ROLLBACK'); } catch { /* preserve the original failure */ }
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { createPool, withTransaction };
