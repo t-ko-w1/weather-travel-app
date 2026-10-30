@@ -18,7 +18,10 @@
       <span class="brand-mark" aria-hidden="true">日</span>
       <span>お天気・お出かけ記録</span>
     </a>
-    <span class="header-note"><span class="status-dot"></span>あなたの旅のノート</span>
+    <div class="header-account">
+      <span id="signed-in-user" class="header-note" hidden></span>
+      <button id="logout-button" class="button button-quiet header-logout" type="button" hidden>ログアウト</button>
+    </div>
   </header>
 
   <main class="page-shell">
@@ -37,7 +40,7 @@
 
     <div id="app-status" class="app-status" role="status" aria-live="polite" hidden></div>
 
-    <div class="content-grid">
+    <div id="app-content" class="content-grid" hidden>
       <section class="panel form-panel" aria-labelledby="form-title">
         <div class="panel-heading">
           <div>
@@ -53,12 +56,24 @@
             <label for="outing-date">お出かけした日 <span class="required-mark">*</span></label>
             <input id="outing-date" name="outingDate" type="date" required>
             <small class="field-error" data-error-for="outingDate"></small>
+            <div class="reminder-option">
+              <label class="reminder-label" for="reminder-enabled">
+                <input id="reminder-enabled" name="reminderEnabled" type="checkbox" value="true">
+                <span>予定日の7日前にメールで通知する</span>
+              </label>
+              <small id="reminder-help" class="hint">通知は初期状態でオフです。未来の日付の予定で設定できます。</small>
+            </div>
           </div>
 
           <div class="field-row">
             <div class="field-group">
               <label for="city">都市・エリア <span class="required-mark">*</span></label>
-              <input id="city" name="city" type="text" maxlength="100" placeholder="例：京都市" required>
+              <div class="city-autocomplete">
+                <input id="city" name="city" type="text" maxlength="100" placeholder="例：京都市、Tokyo、东京" required
+                  role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="city-suggestions" aria-describedby="city-feedback">
+                <div id="city-suggestions" class="city-suggestions" role="listbox" aria-label="都市候補" hidden></div>
+              </div>
+              <small id="city-feedback" class="city-feedback" role="status" aria-live="polite"></small>
               <small class="field-error" data-error-for="city"></small>
             </div>
             <div class="field-group">
@@ -66,19 +81,6 @@
               <input id="destination" name="destination" type="text" maxlength="200" placeholder="例：嵐山" required>
               <small class="field-error" data-error-for="destination"></small>
             </div>
-          </div>
-
-          <div class="field-group">
-            <label for="activity">何をしましたか？</label>
-            <textarea id="activity" name="activity" rows="3" maxlength="5000" placeholder="散策、カフェめぐり、写真撮影など"></textarea>
-            <div class="field-meta"><small class="field-error" data-error-for="activity"></small><small class="counter" data-count-for="activity">0 / 5000</small></div>
-          </div>
-
-          <div class="field-group">
-            <label for="weather">その日の天気</label>
-            <input id="weather" name="weather" type="text" maxlength="50" placeholder="例：晴れ、ときどき曇り">
-            <small class="field-error" data-error-for="weather"></small>
-            <small class="hint">手入力、または選択した日付に対応する天気を取得して反映できます。</small>
           </div>
 
           <section class="weather-tool" aria-labelledby="weather-tool-title">
@@ -116,6 +118,19 @@
           </section>
 
           <div class="field-group">
+            <label for="weather">その日の天気</label>
+            <input id="weather" name="weather" type="text" maxlength="50" placeholder="例：晴れ、ときどき曇り">
+            <small class="field-error" data-error-for="weather"></small>
+            <small class="hint">手入力、または選択した日付に対応する天気を取得して反映できます。</small>
+          </div>
+
+          <div class="field-group">
+            <label for="activity">何をしましたか？</label>
+            <textarea id="activity" name="activity" rows="3" maxlength="5000" placeholder="散策、カフェめぐり、写真撮影など"></textarea>
+            <div class="field-meta"><small class="field-error" data-error-for="activity"></small><small class="counter" data-count-for="activity">0 / 5000</small></div>
+          </div>
+
+          <div class="field-group">
             <label for="notes">メモ</label>
             <textarea id="notes" name="notes" rows="3" maxlength="5000" placeholder="感じたことや、次に行きたい場所など"></textarea>
             <div class="field-meta"><small class="field-error" data-error-for="notes"></small><small class="counter" data-count-for="notes">0 / 5000</small></div>
@@ -136,7 +151,16 @@
             <p class="eyebrow">YOUR JOURNAL</p>
             <h2 id="records-title">お出かけの記録</h2>
           </div>
-          <span id="record-count" class="record-count">— 件</span>
+          <div class="records-controls">
+            <label for="page-size">表示件数
+              <select id="page-size" aria-label="1ページあたりの表示件数">
+                <option value="5">5件</option>
+                <option value="10" selected>10件</option>
+                <option value="20">20件</option>
+              </select>
+            </label>
+            <span id="record-count" class="record-count">— 件</span>
+          </div>
         </div>
 
         <div id="records-loading" class="loading-state">
@@ -148,6 +172,12 @@
           <p>最初のお出かけを左のフォームから追加できます。</p>
         </div>
         <div id="records-list" class="records-list" aria-live="polite"></div>
+        <nav id="records-pagination" class="records-pagination" aria-label="記録一覧ページ" hidden>
+          <button id="previous-page" class="page-button" type="button">前へ</button>
+          <div id="page-numbers" class="page-numbers" aria-label="ページ番号"></div>
+          <button id="next-page" class="page-button" type="button">次へ</button>
+          <span id="page-summary" class="page-summary" aria-live="polite"></span>
+        </nav>
       </section>
     </div>
     <footer class="page-footer">一つひとつの景色を、忘れないように。</footer>

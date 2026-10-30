@@ -66,7 +66,40 @@ function createWeatherService({ fetchImpl = globalThis.fetch, timeoutMs = REQUES
     } finally { clearTimeout(timeout); }
   }
 
-  return async function getWeather(city, targetDate) {
+  async function searchLocations(query) {
+    const cleanQuery = typeof query === 'string' ? query.trim() : '';
+    if ([...cleanQuery].length < 2 || [...cleanQuery].length > 100) {
+      throw new WeatherError(400, 'INVALID_QUERY', '都市名は2文字以上100文字以内で入力してください。');
+    }
+    const terms = locationSearchTerms(cleanQuery);
+    const responses = await Promise.all(['ja', 'en', 'zh'].map(async (language) => {
+      const results = [];
+      for (const term of terms) {
+        const url = new URL(GEOCODING_URL);
+        url.search = new URLSearchParams({ name: term, count: '5', language, format: 'json' });
+        const payload = await fetchJson(url);
+        results.push(...(Array.isArray(payload?.results) ? payload.results : []));
+      }
+      return results;
+    }));
+    const unique = new Map();
+    for (const location of responses.flat()) {
+      if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude) || typeof location.timezone !== 'string') continue;
+      const key = location.id ?? `${location.latitude},${location.longitude}`;
+      if (!unique.has(key)) unique.set(key, location);
+    }
+    return [...unique.values()].slice(0, 8).map((location) => ({
+      id: location.id ?? null,
+      name: location.name,
+      region: location.admin1 || null,
+      country: location.country || null,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      timezone: location.timezone,
+    }));
+  }
+
+  async function getWeather(city, targetDate, selectedLocation = null) {
     const cleanCity = typeof city === 'string' ? city.trim() : '';
     if (cleanCity.length < 2 || [...cleanCity].length > 100) {
       throw new WeatherError(400, 'INVALID_CITY', '都市名は2文字以上100文字以内で入力してください。');
@@ -75,10 +108,13 @@ function createWeatherService({ fetchImpl = globalThis.fetch, timeoutMs = REQUES
       throw new WeatherError(400, 'INVALID_DATE', '日付は有効なYYYY-MM-DD形式で指定してください。');
     }
 
-    const geocodingUrl = new URL(GEOCODING_URL);
-    geocodingUrl.search = new URLSearchParams({ name: cleanCity, count: '1', language: 'ja', format: 'json' });
-    const geocoding = await fetchJson(geocodingUrl);
-    const location = geocoding?.results?.[0];
+    let location = selectedLocation;
+    if (!location) {
+      const geocodingUrl = new URL(GEOCODING_URL);
+      geocodingUrl.search = new URLSearchParams({ name: cleanCity, count: '1', language: 'ja', format: 'json' });
+      const geocoding = await fetchJson(geocodingUrl);
+      location = geocoding?.results?.[0];
+    }
     if (!location) throw new WeatherError(404, 'CITY_NOT_FOUND', '都市が見つかりません。都市名を変えてお試しください。');
     if (!Number.isFinite(location.latitude) || !Number.isFinite(location.longitude) || typeof location.timezone !== 'string') {
       throw new WeatherError(502, 'WEATHER_PROVIDER_ERROR', '都市の位置情報を取得できませんでした。');
@@ -110,7 +146,7 @@ function createWeatherService({ fetchImpl = globalThis.fetch, timeoutMs = REQUES
     const retrievedAt = now().toISOString();
     const common = {
       dataType, targetDate,
-      location: { name: location.name, region: location.admin1 || null, country: location.country || null },
+      location: { name: location.name, region: location.region || location.admin1 || null, country: location.country || null },
       timezone: location.timezone,
       attribution: 'Weather data by Open-Meteo',
       retrievedAt,
@@ -162,7 +198,16 @@ function createWeatherService({ fetchImpl = globalThis.fetch, timeoutMs = REQUES
       precipitation: { value: precipitation, unit: dailyUnits(payload, 'precipitation_sum', 'mm') },
       observedAt: targetDate,
     };
-  };
+  }
+
+  getWeather.searchLocations = searchLocations;
+  return getWeather;
+}
+
+function locationSearchTerms(query) {
+  const folded = query.normalize('NFKC').trim().toLocaleLowerCase();
+  const tokyoAliases = new Set(['tokyo-to', 'tokyo to']);
+  return tokyoAliases.has(folded) ? ['Tokyo'] : [query];
 }
 
 function dailyUnits(payload, name, fallback) {

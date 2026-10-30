@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f5ef">
+  <title>ログイン | お天気・お出かけ記録</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/login.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="お天気・お出かけ記録 ホーム">
+      <span class="brand-mark" aria-hidden="true">日</span>
+      <span>お天気・お出かけ記録</span>
+    </a>
+  </header>
+  <main class="login-shell">
+    <section class="panel login-panel" aria-labelledby="login-title">
+      <p class="eyebrow">YOUR LITTLE TRAVEL JOURNAL</p>
+      <h1 id="login-title">ログインして記録を開く</h1>
+      <p class="intro-text">Googleアカウントで安全にログインできます。</p>
+      <p id="login-error" class="app-status" role="alert" hidden></p>
+      <a class="button button-primary google-login-button" href="/auth/google">
+        <span aria-hidden="true">G</span><span>Googleでログイン</span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>

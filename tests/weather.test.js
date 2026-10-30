@@ -8,6 +8,11 @@ function jsonResponse(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
+function testSessionMiddleware(req, _res, next) {
+  req.session = { userId: 'test-user', csrfToken: 'test-csrf-token' };
+  next();
+}
+
 function geocodingResponse() {
   return { results: [{ name: '東京', admin1: '東京都', country: '日本', latitude: 35.68, longitude: 139.69, timezone: 'Asia/Tokyo' }] };
 }
@@ -49,6 +54,44 @@ test('過去の日付は履歴APIから日別天気を取得し共通形式に�
   assert.deepEqual(result.temperatureMax, { value: 19.4, unit: '°C' });
   assert.deepEqual(result.temperatureMin, { value: 11.2, unit: '°C' });
   assert.deepEqual(result.precipitation, { value: 2.3, unit: 'mm' });
+});
+
+test('都市候補検索は日本語・英語・中国語の候補を統合して位置情報を返す', async () => {
+  const urls = [];
+  const fetchImpl = async (url) => {
+    const parsed = new URL(url);
+    urls.push(parsed);
+    const language = parsed.searchParams.get('language');
+    const names = { ja: '東京', en: 'Tokyo', zh: '东京' };
+    return jsonResponse({ results: [{
+      id: 1850147, name: names[language], admin1: '東京都', country: '日本',
+      latitude: 35.68, longitude: 139.69, timezone: 'Asia/Tokyo',
+    }] });
+  };
+  const service = createWeatherService({ fetchImpl });
+  const results = await service.searchLocations('Tokyo');
+  assert.equal(urls.length, 3);
+  assert.deepEqual(urls.map((url) => url.searchParams.get('language')).sort(), ['en', 'ja', 'zh']);
+  assert.equal(urls.every((url) => url.searchParams.get('count') === '5'), true);
+  assert.equal(results.length, 1, '言語違いの同じ場所を統合する');
+  assert.deepEqual(results[0], {
+    id: 1850147, name: '東京', region: '東京都', country: '日本',
+    latitude: 35.68, longitude: 139.69, timezone: 'Asia/Tokyo',
+  });
+});
+
+test('候補選択後の天気取得は選択された緯度・経度を使い、再検索しない', async () => {
+  const { fetchImpl, urls } = createMockFetch({
+    timezone: 'Asia/Tokyo',
+    current: { time: '2026-10-28T09:00', temperature_2m: 20, apparent_temperature: 19, relative_humidity_2m: 60, weather_code: 1, wind_speed_10m: 4 },
+    current_units: { temperature_2m: '°C', apparent_temperature: '°C', relative_humidity_2m: '%', wind_speed_10m: 'km/h' },
+  });
+  const selected = { id: 1850147, name: '東京', region: '東京都', country: '日本', latitude: 35.68, longitude: 139.69, timezone: 'Asia/Tokyo' };
+  const result = await createWeatherService({ fetchImpl, now: () => new Date('2026-10-28T02:00:00Z') })('東京', '2026-10-28', selected);
+  assert.equal(urls.length, 1, '選択済み位置があるためジオコーディングを再実行しない');
+  assert.equal(urls[0].searchParams.get('latitude'), '35.68');
+  assert.equal(urls[0].searchParams.get('longitude'), '139.69');
+  assert.equal(result.location.name, '東京');
 });
 
 test('今日の判定は対象都市のタイムゾーンを使い、現在気温を日別気温と混同しない', async () => {
@@ -116,7 +159,7 @@ test('天気APIタイムアウト後も記録一覧APIを利用できる', async
     timeoutMs: 20,
   });
   let recordQueryCalls = 0;
-  const server = createServer(createApp({ query: async () => { recordQueryCalls += 1; return { rows: [] }; }, weather: getWeather }));
+  const server = createServer(createApp({ query: async () => { recordQueryCalls += 1; return { rows: [] }; }, weather: getWeather, sessionMiddleware: testSessionMiddleware }));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
     const base = `http://127.0.0.1:${server.address().port}`;
@@ -136,13 +179,14 @@ test('天気API routeは都市・日付を渡し、日付不正を検証しCRUD 
   const server = createServer(createApp({
     query: async () => { queryCalls += 1; return { rows: [] }; },
     weather: async (...values) => { args = values; return { dataType: 'forecast', weather: '晴れ' }; },
+    sessionMiddleware: testSessionMiddleware,
   }));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
     const base = `http://127.0.0.1:${server.address().port}/api/weather`;
     let response = await fetch(`${base}?city=${encodeURIComponent('東京')}&date=2026-10-29`);
     assert.equal(response.status, 200);
-    assert.deepEqual(args, ['東京', '2026-10-29']);
+    assert.deepEqual(args, ['東京', '2026-10-29', null]);
     assert.deepEqual(await response.json(), { dataType: 'forecast', weather: '晴れ' });
     response = await fetch(`${base}?city=${encodeURIComponent('東京')}&date=nope`);
     assert.equal(response.status, 400);

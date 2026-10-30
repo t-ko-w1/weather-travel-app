@@ -6,11 +6,21 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "reminders:run": "node src/reminder-worker.js --once",
+    "reminders:preview": "node scripts/preview-reminder.js",
+    "reminders:mailpit-test": "node scripts/mailpit-reminder.js",
+    "mail:test": "node scripts/send-test-email.js"
   },
   "dependencies": {
+    "connect-pg-simple": "^10.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "express-rate-limit": "^8.7.2",
+    "express-session": "^1.19.0",
+    "google-auth-library": "^11.3.2",
+    "helmet": "^8.3.0",
+    "nodemailer": "^10.3.1",
     "pg": "^8.13.1"
   }
 }
